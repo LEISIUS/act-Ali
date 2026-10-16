@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="logo.ico">
+<title>MaquiReto – Trivia de maquinaria</title>
+<link rel="stylesheet" href="configuracion.css">
+</head>
+<body>
+<div class="caja">
+
+<nav class="menu" id="menu">
+    <button class="boton gris" onclick="volver()">← Atrás</button>
+    <button class="boton gris" onclick="ir('inicio')">🏠 Inicio</button>
+    <button class="boton gris" onclick="ir('niveles')">📋 Niveles</button>
+</nav>
+
+<section id="inicio" class="pantalla activa">
+  <div class="portada">
+    <img class="logo" src="logo.ico" alt="Logotipo" onerror="this.style.display='none'">
+    <h1>MaquiReto</h1>
+    <p>Pon a prueba lo que sabes sobre molinos, amasadoras, envasadoras y clasificadoras, desde las máquinas antiguas hasta la automatización moderna. ¡Tienes 30 segundos por pregunta!</p>
+    <button class="boton" onclick="ir('niveles')">▶ Jugar ahora</button>
+    <button class="boton blanco" onclick="ir('reglas')">Cómo jugar</button>
+  </div>
+
+  <!-- ficha de la actividad: los textos se cambian en DATOS, dentro del script -->
+  <div class="tarjeta">
+    <span class="etiqueta">Actividad</span><span class="etiqueta" id="fTipo"></span>
+    <h2 id="fTitulo"></h2>
+    <p id="fDesc"></p>
+    <div class="datos">
+      <div><span>Área / tema</span><b id="fArea"></b></div>
+      <div><span>Autor</span><b id="fAutor"></b></div>
+      <div><span>Nivel educativo</span><b id="fNivel"></b></div>
+      <div><span>Idioma</span><b id="fIdioma"></b></div>
+      <div><span>Niveles</span><b id="fNiv"></b></div>
+      <div><span>Preguntas</span><b id="fPreg"></b></div>
+      <div><span>Tiempo por pregunta</span><b id="fTiempo"></b></div>
+      <div><span>Última actualización</span><b id="fFecha"></b></div>
+      <div><span>Partidas en este dispositivo</span><b id="fJug">0</b></div>
+    </div>
+    <h3>¿Qué vas a aprender?</h3>
+    <ul id="fObj"></ul>
+    <h3>Entrada directa al juego</h3>
+    <p class="nota">Abre este enlace para entrar sin pasar por el inicio (añade <b>#jugar</b> al final de la dirección del archivo):</p>
+    <code class="enlace" id="fLink"></code>
+    <button class="boton verde" onclick="ir('niveles')">▶ Entrar directamente al juego</button>
+  </div>
+</section>
+
+<section id="reglas" class="pantalla">
+  <h2>Cómo jugar</h2>
+  <div class="tarjeta"><ol>
+    <li id="reglaNivel"></li>
+    <li>Observa la imagen y elige la respuesta correcta.</li>
+    <li>Tienes <b>30 segundos</b> por pregunta. Si se acaba el tiempo, no sumas puntos.</li>
+    <li>Cada acierto da <b>100 puntos</b> más un bono por rapidez. Las respuestas incorrectas no suman.</li>
+    <li>Consigue al menos <b>60%</b> de aciertos en un nivel para ganar su insignia.</li>
+    <li>Al final de cada respuesta verás por qué era correcta o incorrecta.</li>
+  </ol></div>
+  <button class="boton verde" onclick="ir('niveles')">▶ Jugar ahora</button>
+  <button class="boton gris" onclick="ir('inicio')">Volver</button>
+</section>
+
+<section id="niveles" class="pantalla">
+  <div class="cabecera"><h2>Selecciona un nivel</h2><b id="total"></b></div>
+  <div id="listaNiveles"></div>
+  <button class="boton gris" onclick="ir('inicio')">Inicio</button>
+</section>
+
+<section id="preguntas" class="pantalla">
+  <div class="cabecera"><b id="pNivel"></b><span id="pNum"></span><b id="pPuntos"></b></div>
+  <div class="barra" id="barra"><i id="barraDentro"></i></div>
+  <div style="text-align:right;font-weight:700" id="tiempo"></div>
+  <div class="imagen" id="pImagen"></div>
+  <h2 id="pTexto" style="font-size:1.2rem"></h2>
+  <div id="pOpciones"></div>
+  <div id="pAviso"></div>
+  <button class="boton verde" id="pSig" style="display:none" onclick="siguiente()">Siguiente ➜</button>
+</section>
+
+<section id="resultados" class="pantalla" style="text-align:center">
+  <h2 id="rTitulo"></h2>
+  <div class="resumen"><div><b id="rPuntos">0</b>Puntuación final</div><div><b id="rPorc">0%</b>Respuestas correctas</div></div>
+  <h3>Insignias</h3>
+  <div class="insignias" id="rInsignias"></div>
+  <p>
+    <button class="boton verde" onclick="empezar(niv)">↻ Volver a jugar</button>
+    <button class="boton gris" onclick="ir('niveles')">Niveles</button>
+  </p>
+</section>
+</div>
+
+<script>
+// ================== DATOS DE LA FICHA (cambia lo que quieras) ==================
+const DATOS = {
+    titulo: 'MaquiReto: maquinaria de molienda y envasado',
+    tipo: 'Test de opción múltiple',
+    area: 'Tecnología e industria alimentaria',
+    autor: 'Tu nombre aquí',
+    nivel: 'Educación técnica / Secundaria',
+    idioma: 'Español',
+    fecha: 'Octubre 2026',
+    descripcion: 'Recorre la evolución de la maquinaria: desde los molinos tradicionales hasta las líneas automatizadas. Responde preguntas con imágenes sobre molinos, amasadoras, envasadoras y clasificadoras, contra el reloj, y gana insignias.',
+    objetivos: [
+        'Reconocer molinos, amasadoras, envasadoras y clasificadoras.',
+        'Entender cómo ha evolucionado la maquinaria, de lo manual a lo automatizado.',
+        'Conocer conceptos como PLC, visión artificial, OEE y mantenimiento predictivo.'
+    ],
+
+    // reglas del juego
+    tiempo: 30,          // segundos por pregunta
+    puntosAcierto: 100,  // puntos base por acierto (+2 por cada segundo que sobre)
+    aprobar: 60,         // % minimo de aciertos para ganar la insignia del nivel
+
+    // niveles: false = el jugador elige el nivel que quiera
+    //          true  = hay que superar un nivel para abrir el siguiente
+    bloquearNiveles: false,
+
+    // fotos: en cada pregunta, "foto" puede ser:
+    //   'cedazo'                      -> busca img/cedazo.jpg (carpeta y formato de abajo)
+    //   'img/cedazo.png'              -> ruta local, cualquier formato
+    //   'https://sitio.com/foto.jpg'  -> enlace de internet
+    // si no carga, se muestra la ilustracion dibujada
+    carpetaFotos: 'img',
+    formatoFotos: 'jpg'
+};
+
+// colores que usan las ilustraciones
+const COL = {
+    v: '#2e8b3d',   // verde
+    vo: '#1f6b2c',  // verde oscuro
+    am: '#f6c62b',  // amarillo
+    bl: '#ffffff',  // blanco
+    cl: '#e5f3dd'   // verde clarito
+};
+
+// ilustraciones (se muestran si no hay foto real)
+const DIB = {
+molino:`<svg viewBox="0 0 200 150"><rect width="200" height="150" rx="10" fill="${COL.cl}"/><circle cx="165" cy="28" r="14" fill="${COL.am}"/><path d="M0 112q50-28 100-8t100-8V150H0z" fill="${COL.v}"/><path d="M0 128q60-16 110-4t90-6V150H0z" fill="${COL.vo}"/><path d="M78 124l9-56h26l9 56z" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="3"/><path d="M84 68h32l-16-16z" fill="${COL.am}" stroke="${COL.vo}" stroke-width="3" stroke-linejoin="round"/><path d="M94 124v-16a6 6 0 0112 0v16z" fill="${COL.vo}"/><rect x="96" y="80" width="8" height="10" rx="2" fill="${COL.vo}"/><g transform="rotate(22 100 60)"><path d="M100 60V10M100 60H150M100 60V110M100 60H50" stroke="${COL.vo}" stroke-width="4" stroke-linecap="round"/><g fill="${COL.bl}" stroke="${COL.vo}" stroke-width="2"><rect x="102" y="12" width="14" height="26"/><rect x="112" y="62" width="26" height="14"/><rect x="84" y="82" width="14" height="26"/><rect x="62" y="44" width="26" height="14"/></g></g><circle cx="100" cy="60" r="6" fill="${COL.am}" stroke="${COL.vo}" stroke-width="2"/></svg>`,
+piedra:`<svg viewBox="0 0 200 150"><rect width="200" height="150" rx="10" fill="${COL.cl}"/><rect y="126" width="200" height="24" rx="6" fill="${COL.vo}"/><path d="M70 10h60l-12 32H82z" fill="${COL.am}" stroke="${COL.vo}" stroke-width="3" stroke-linejoin="round"/><circle cx="92" cy="22" r="3" fill="${COL.vo}"/><circle cx="106" cy="28" r="3" fill="${COL.vo}"/><circle cx="114" cy="19" r="3" fill="${COL.vo}"/><rect x="36" y="56" width="128" height="20" fill="${COL.v}"/><ellipse cx="100" cy="56" rx="64" ry="12" fill="${COL.v}" stroke="${COL.vo}" stroke-width="3"/><path d="M62 54l10-5M86 56l6-7M112 56l8-7M138 54l-10-5" stroke="${COL.vo}" stroke-width="2" stroke-linecap="round"/><rect x="36" y="76" width="128" height="10" fill="${COL.am}"/><rect x="36" y="86" width="128" height="24" fill="${COL.vo}"/><ellipse cx="100" cy="86" rx="64" ry="12" fill="${COL.vo}" stroke="${COL.bl}" stroke-width="2"/><ellipse cx="100" cy="110" rx="64" ry="12" fill="${COL.vo}"/><path d="M164 112q16 4 24 22H150z" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="2"/><rect x="14" y="108" width="30" height="26" rx="5" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="2"/><path d="M20 118h18" stroke="${COL.am}" stroke-width="5" stroke-linecap="round"/></svg>`,
+amasadora:`<svg viewBox="0 0 200 150"><rect width="200" height="150" rx="10" fill="${COL.cl}"/><rect x="20" y="128" width="160" height="12" rx="5" fill="${COL.vo}"/><rect x="128" y="22" width="40" height="106" rx="8" fill="${COL.v}"/><rect x="136" y="32" width="24" height="16" rx="3" fill="${COL.bl}"/><circle cx="140" cy="62" r="5" fill="${COL.am}"/><circle cx="156" cy="62" r="5" fill="${COL.am}"/><rect x="134" y="78" width="28" height="8" rx="3" fill="${COL.vo}"/><rect x="30" y="20" width="110" height="16" rx="8" fill="${COL.v}"/><rect x="62" y="34" width="12" height="36" fill="${COL.vo}"/><path d="M68 68c-16-6 16-12 0-18" stroke="${COL.am}" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M28 78h92l-12 46H40z" fill="${COL.am}" stroke="${COL.vo}" stroke-width="3" stroke-linejoin="round"/><path d="M32 80q30-16 60-8t26 8z" fill="${COL.bl}"/><path d="M26 78h96" stroke="${COL.vo}" stroke-width="4" stroke-linecap="round"/></svg>`,
+envasadora:`<svg viewBox="0 0 200 150"><rect width="200" height="150" rx="10" fill="${COL.cl}"/><rect y="128" width="200" height="12" fill="${COL.vo}"/><circle cx="46" cy="30" r="22" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="4"/><circle cx="46" cy="30" r="8" fill="${COL.am}"/><rect x="82" y="8" width="62" height="44" rx="6" fill="${COL.v}"/><rect x="92" y="16" width="26" height="14" rx="3" fill="${COL.bl}"/><circle cx="130" cy="22" r="4" fill="${COL.am}"/><path d="M68 30h14" stroke="${COL.vo}" stroke-width="3"/><rect x="104" y="52" width="14" height="40" fill="${COL.vo}"/><rect x="92" y="90" width="38" height="12" rx="3" fill="${COL.am}" stroke="${COL.vo}" stroke-width="2"/><path d="M96 102h30l4 26H92z" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="3" stroke-linejoin="round"/><path d="M96 112h30" stroke="${COL.am}" stroke-width="6"/><path d="M14 128l4-22h24l4 22z" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="2"/><path d="M158 128l4-22h24l4 22z" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="2"/><circle cx="30" cy="118" r="4" fill="${COL.v}"/><circle cx="174" cy="118" r="4" fill="${COL.v}"/></svg>`,
+clasificadora:`<svg viewBox="0 0 200 150"><rect width="200" height="150" rx="10" fill="${COL.cl}"/><rect x="56" y="8" width="60" height="22" rx="5" fill="${COL.v}"/><path d="M76 30h20l-4 14H80z" fill="${COL.vo}"/><rect x="8" y="58" width="184" height="14" rx="7" fill="${COL.vo}"/><circle cx="18" cy="65" r="5" fill="${COL.am}"/><circle cx="182" cy="65" r="5" fill="${COL.am}"/><circle cx="30" cy="52" r="6" fill="${COL.am}"/><circle cx="52" cy="53" r="4" fill="${COL.v}"/><circle cx="74" cy="52" r="7" fill="${COL.v}"/><circle cx="96" cy="53" r="5" fill="${COL.am}"/><circle cx="118" cy="52" r="7" fill="${COL.v}"/><rect x="128" y="20" width="40" height="18" rx="4" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="3"/><circle cx="148" cy="29" r="5" fill="${COL.am}"/><path d="M148 38v8" stroke="${COL.vo}" stroke-width="3"/><path d="M142 72q-4 14 10 22M150 72q-2 12 8 20" stroke="${COL.am}" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="14" y="104" width="64" height="32" rx="5" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="3"/><circle cx="34" cy="122" r="5" fill="${COL.v}"/><circle cx="52" cy="124" r="5" fill="${COL.v}"/><rect x="122" y="104" width="64" height="32" rx="5" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="3"/><circle cx="144" cy="122" r="5" fill="${COL.am}"/><circle cx="162" cy="124" r="5" fill="${COL.am}"/></svg>`,
+robot:`<svg viewBox="0 0 200 150"><rect width="200" height="150" rx="10" fill="${COL.cl}"/><rect y="128" width="200" height="12" fill="${COL.vo}"/><rect x="18" y="112" width="52" height="16" rx="4" fill="${COL.vo}"/><rect x="34" y="96" width="20" height="16" fill="${COL.v}"/><circle cx="44" cy="92" r="10" fill="${COL.am}" stroke="${COL.vo}" stroke-width="3"/><path d="M44 92L70 46" stroke="${COL.v}" stroke-width="12" stroke-linecap="round"/><circle cx="70" cy="46" r="9" fill="${COL.am}" stroke="${COL.vo}" stroke-width="3"/><path d="M70 46L118 54" stroke="${COL.v}" stroke-width="10" stroke-linecap="round"/><circle cx="118" cy="54" r="7" fill="${COL.am}" stroke="${COL.vo}" stroke-width="3"/><path d="M118 54v14M110 68h16" stroke="${COL.vo}" stroke-width="4" stroke-linecap="round"/><rect x="104" y="72" width="28" height="22" rx="3" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="3"/><rect x="120" y="108" width="62" height="20" rx="3" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="3"/><rect x="132" y="100" width="26" height="8" fill="${COL.am}"/><circle cx="168" cy="26" r="14" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="4"/><circle cx="168" cy="26" r="5" fill="${COL.v}"/></svg>`,
+cedazo:`<svg viewBox="0 0 200 150"><rect width="200" height="150" rx="10" fill="${COL.cl}"/><rect x="28" y="124" width="144" height="14" rx="6" fill="${COL.vo}"/><path d="M40 100q60 34 120 0l-6 24H46z" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="3" stroke-linejoin="round"/><ellipse cx="100" cy="74" rx="56" ry="20" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="7"/><path d="M60 66h80M52 74h96M60 82h80M80 56v36M100 54v40M120 56v36" stroke="${COL.v}" stroke-width="2"/><circle cx="82" cy="14" r="6" fill="${COL.am}"/><circle cx="102" cy="8" r="7" fill="${COL.v}"/><circle cx="120" cy="16" r="6" fill="${COL.am}"/><circle cx="92" cy="34" r="5" fill="${COL.v}"/><circle cx="110" cy="38" r="5" fill="${COL.am}"/><path d="M76 96q24 14 48 0" stroke="${COL.am}" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M158 74h26" stroke="${COL.vo}" stroke-width="7" stroke-linecap="round"/></svg>`,
+rodillos:`<svg viewBox="0 0 200 150"><rect width="200" height="150" rx="10" fill="${COL.cl}"/><path d="M60 8h80l-18 28H78z" fill="${COL.am}" stroke="${COL.vo}" stroke-width="3" stroke-linejoin="round"/><circle cx="90" cy="20" r="3" fill="${COL.vo}"/><circle cx="104" cy="16" r="3" fill="${COL.vo}"/><circle cx="114" cy="22" r="3" fill="${COL.vo}"/><rect x="26" y="40" width="148" height="76" rx="10" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="3"/><circle cx="80" cy="76" r="26" fill="${COL.v}" stroke="${COL.vo}" stroke-width="4"/><circle cx="120" cy="76" r="26" fill="${COL.v}" stroke="${COL.vo}" stroke-width="4"/><path d="M80 56v8M80 88v8M60 76h8M92 76h0M120 56v8M120 88v8M132 76h8" stroke="${COL.vo}" stroke-width="3" stroke-linecap="round"/><circle cx="80" cy="76" r="6" fill="${COL.bl}"/><circle cx="120" cy="76" r="6" fill="${COL.bl}"/><path d="M62 50q-10 8-4 22M138 50q10 8 4 22" stroke="${COL.am}" stroke-width="4" fill="none" stroke-linecap="round"/><rect x="66" y="122" width="68" height="14" rx="6" fill="${COL.bl}" stroke="${COL.vo}" stroke-width="3"/><path d="M76 129h48" stroke="${COL.am}" stroke-width="4" stroke-linecap="round"/></svg>`,
+panel:`<svg viewBox="0 0 200 150"><rect width="200" height="150" rx="10" fill="${COL.cl}"/><rect x="26" y="10" width="148" height="128" rx="10" fill="${COL.vo}"/><rect x="38" y="22" width="124" height="56" rx="5" fill="${COL.bl}"/><path d="M46 68l20-16 18 8 22-24 20 18 28-14" stroke="${COL.v}" stroke-width="4" fill="none" stroke-linejoin="round" stroke-linecap="round"/><path d="M46 70h108" stroke="${COL.am}" stroke-width="2" stroke-dasharray="4 4"/><circle cx="52" cy="98" r="8" fill="${COL.am}"/><circle cx="78" cy="98" r="8" fill="${COL.v}"/><circle cx="104" cy="98" r="8" fill="${COL.bl}"/><rect x="126" y="90" width="36" height="16" rx="3" fill="${COL.am}"/><rect x="38" y="116" width="124" height="14" rx="3" fill="${COL.v}"/><path d="M50 123h28M96 123h14" stroke="${COL.bl}" stroke-width="3" stroke-linecap="round"/><path d="M174 80q16 0 16 24" stroke="${COL.vo}" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`
+};
+
+// preguntas: cada nivel tiene su lista
+// en cada pregunta: dib = ilustracion, foto = nombre de la foto real,
+// ops = opciones (la correcta va primero), bien = posicion de la correcta (0 = la primera)
+const NIVELES = [
+{nom:'Maquinarias antiguas',desc:'Molinos y herramientas tradicionales',lista:[
+{dib:'molino',foto:'img/molino-viento.jpg',texto:'¿Qué fuerza natural mueve las aspas de un molino de viento tradicional?',ops:['El viento','El vapor','La electricidad','El petróleo'],bien:0,porque:'Las aspas captan la energía del viento y la transmiten a un eje que hace girar las piedras de moler.'},
+{dib:'piedra',foto:'img/molino-piedra.jpg',texto:'En un molino de piedra, ¿qué piezas trituran el grano?',ops:['Dos muelas, una fija y otra giratoria','Cuchillas de acero','Rodillos de goma','Un martillo neumático'],bien:0,porque:'El grano pasa entre la muela fija (solera) y la giratoria (volandera), que lo muelen por fricción.'},
+{dib:'amasadora',foto:'img/amasado-manual.jpg',texto:'Antes de las amasadoras eléctricas, ¿cómo se amasaba normalmente?',ops:['A mano, en artesas o mesas de madera','Con robots','Con prensas hidráulicas','En centrifugadoras'],bien:0,porque:'El amasado era manual: se trabajaba la masa con las manos hasta desarrollar el gluten.'},
+{dib:'cedazo',foto:'img/cedazo.jpg',texto:'¿Qué herramienta antigua se usaba para separar granos por tamaño o quitar impurezas?',ops:['El cedazo o criba','El láser','La balanza digital','La cinta transportadora'],bien:0,porque:'El cedazo o criba tiene una malla: lo fino pasa y lo grueso o las impurezas se quedan arriba.'}]},
+{nom:'Máquinas industriales',desc:'Mecanización de la producción',lista:[
+{dib:'rodillos',foto:'img/molino-rodillos.jpg',texto:'¿Qué usa un molino industrial de rodillos en lugar de piedras?',ops:['Rodillos metálicos que giran a distinta velocidad','Aspas de madera','Un horno','Agua a presión'],bien:0,porque:'Los rodillos rompen el grano y separan el salvado de la harina de forma más rápida y continua que las piedras.'},
+{dib:'amasadora',foto:'img/amasadora-espiral.jpg',texto:'¿Qué caracteriza a una amasadora de espiral?',ops:['Un gancho en espiral y un recipiente que gira','Un horno integrado','Rodillos de molienda','Un sellador de bolsas'],bien:0,porque:'El gancho en espiral y el recipiente giratorio mezclan de forma uniforme sin calentar demasiado la masa.'},
+{dib:'envasadora',foto:'img/envasadora-vertical.jpg',texto:'¿Qué hace una envasadora vertical (forma-llena-sella)?',ops:['Forma la bolsa, la llena con el producto y la sella','Solo pesa el producto','Muele el grano','Solo clasifica por color'],bien:0,porque:'Parte de una lámina de film, forma el tubo, deja caer el producto y sella arriba y abajo en un solo ciclo.'},
+{dib:'clasificadora',foto:'img/criba-vibratoria.avif',texto:'¿Cómo separa por tamaño una clasificadora con cribas vibratorias?',ops:['Las mallas vibran y dejan pasar solo lo más pequeño','Pesa cada grano','Usa cámaras de visión','Calienta el producto'],bien:0,porque:'La vibración mueve el producto sobre mallas de distinta apertura y cada fracción cae en su salida.'}]},
+{nom:'Maquinaria moderna y automatización',desc:'Sensores, cámaras y control inteligente',lista:[
+{dib:'clasificadora',foto:'img/clasificadora-optica.webp',texto:'¿Qué usa una clasificadora óptica moderna para rechazar productos defectuosos?',ops:['Cámaras y sopladores de aire','Solo cribas','Piedras','Operarios con pinzas únicamente'],bien:0,porque:'Las cámaras detectan defectos de color o forma y un chorro de aire expulsa la pieza en milisegundos.'},
+{dib:'envasadora',foto:'img/pesadora-multicabezal.webp',texto:'¿Para qué sirve una pesadora multicabezal en una envasadora?',ops:['Para dosificar con precisión el peso de cada bolsa','Para amasar','Para moler','Para enfriar el producto'],bien:0,porque:'Combina varias tolvas de pesaje y elige la mezcla de pesos que más se acerca al objetivo, reduciendo el desperdicio.'},
+{dib:'panel',foto:'img/plc.webp',texto:'¿Qué dispositivo suele controlar el funcionamiento automático de una línea de producción?',ops:['El PLC (controlador lógico programable)','Un termómetro','Una criba','Una polea'],bien:0,porque:'El PLC lee sensores, ejecuta un programa y activa motores y válvulas de forma automática.'},
+{dib:'robot',foto:'img/sensores.webp',texto:'¿Qué permite el mantenimiento predictivo con sensores?',ops:['Detectar fallas antes de que la máquina se detenga','Eliminar la necesidad de energía','Aumentar el ruido','Que la máquina nunca se desgaste'],bien:0,porque:'Sensores de vibración y temperatura detectan señales tempranas y permiten reparar antes de una avería.'}]},
+{nom:'El reto del experto',desc:'Preguntas mixtas, ¡solo para expertos!',lista:[
+{dib:'amasadora',foto:'img/amasado-temperatura.webp',texto:'En el amasado, ¿qué factor es clave controlar para obtener una masa constante?',ops:['La temperatura final de la masa','El color del recipiente','El tamaño de la sala','La marca de la harina'],bien:0,porque:'La temperatura afecta la fermentación y el desarrollo del gluten, por eso se controla con agua fría o hielo.'},
+{dib:'envasadora',foto:'img/envasado-nitrogeno.jpeg',texto:'¿Por qué algunas envasadoras inyectan nitrógeno en la bolsa?',ops:['Para desplazar el oxígeno y alargar la vida útil','Para que pese más','Para colorear el producto','Para enfriar la máquina'],bien:0,porque:'Con menos oxígeno se frena la oxidación y el crecimiento de microorganismos, y además amortigua el producto.'},
+{dib:'rodillos',foto:'img/molino-granulometria.webp',texto:'¿Qué propiedad de la harina se controla ajustando la separación entre rodillos?',ops:['La granulometría (tamaño de partícula)','El sabor del agua','El color de la bolsa','La humedad del aire'],bien:0,porque:'Menos separación entre rodillos produce partículas más finas, y eso define el tipo de harina.'},
+{dib:'clasificadora',foto:'img/clasificadora-color.webp',texto:'¿Qué ventaja tiene clasificar por color/visión frente a clasificar solo por tamaño?',ops:['Detecta defectos que el tamaño no revela','Es más lenta','No necesita energía','Solo sirve para piedras'],bien:0,porque:'Dos granos del mismo tamaño pueden tener manchas o impurezas: la visión artificial los distingue.'},
+{dib:'panel',foto:'img/oee.webp',texto:'¿Qué indicador mide la eficiencia global de un equipo (disponibilidad, rendimiento y calidad)?',ops:['OEE','PIB','IVA','RPM'],bien:0,porque:'El OEE combina disponibilidad, rendimiento y calidad en un solo porcentaje para evaluar una línea.'}]}
+];
+
+const MEDALLAS = ['🌾', '⚙️', '🤖', '🏆'];
+const TITULOS = ['Molinero', 'Operario industrial', 'Técnico 4.0', 'Experto'];
+
+// ------------------ lo que va pasando mientras se juega ------------------
+let mejor = [0, 0, 0, 0];                      // mejor puntaje por nivel
+let superado = [false, false, false, false];   // niveles ya pasados
+let niv = 0;        // nivel actual
+let preg = 0;       // pregunta actual
+let aciertos = 0;
+let puntos = 0;
+let seg = 0;        // segundos que quedan
+let reloj = null;
+let listo = false;  // ya se respondio esta pregunta
+
+function porId(id) {
+    return document.getElementById(id);
+}
+
+let historial = [];   // pantallas por las que va pasando el jugador
+
+// si esta en una pregunta, avisa antes de salir
+function seguroSalir() {
+    const actual = document.querySelector('.pantalla.activa').id;
+    return actual !== 'preguntas' || confirm('¿Salir del nivel? Se pierde el progreso de esta partida.');
+}
+
+// ir a una pantalla
+function ir(pantalla) {
+    if (!seguroSalir()) return;
+    clearInterval(reloj);
+    const actual = document.querySelector('.pantalla.activa').id;
+    if (actual !== pantalla) historial.push(actual);
+    mostrar(pantalla);
+}
+
+// volver a la pantalla anterior
+function volver() {
+    if (!seguroSalir()) return;
+    clearInterval(reloj);
+    let anterior = historial.pop();
+    // no se vuelve a una pregunta ni a unos resultados viejos
+    while (anterior === 'preguntas' || anterior === 'resultados') {
+        anterior = historial.pop();
+    }
+    mostrar(anterior || 'inicio');
+}
+
+// cambia lo que se ve en pantalla
+function mostrar(pantalla) {
+    document.querySelectorAll('.pantalla').forEach(function (p) {
+        p.classList.toggle('activa', p.id === pantalla);
+    });
+    porId('menu').classList.toggle('visible', pantalla !== 'inicio');
+    if (pantalla === 'niveles') dibujarNiveles();
+    window.scrollTo(0, 0);
+}
+
+function dibujarNiveles() {
+    let suma = 0;
+    mejor.forEach(function (m) { suma += m; });
+    porId('total').textContent = '⭐ ' + suma + ' pts';
+
+    let html = '';
+    NIVELES.forEach(function (n, i) {
+        const bloqueado = DATOS.bloquearNiveles && i > 0 && !superado[i - 1];
+        const clase = (i === 3) ? 'nivel final' : 'nivel';
+        const titulo = (i === 3) ? 'Nivel final' : 'Nivel ' + (i + 1);
+        const texto = bloqueado ? '🔒 Supera el nivel anterior para desbloquear' : n.desc;
+
+        html += '<button class="' + clase + '" ' + (bloqueado ? 'disabled' : '') + ' onclick="empezar(' + i + ')">' +
+            '<span class="numero">' + (i === 3 ? '★' : i + 1) + '</span>' +
+            '<span><b>' + titulo + ': ' + n.nom + '</b><small>' + texto + '</small></span>' +
+            '<span style="margin-left:auto;font-size:26px">' + (superado[i] ? MEDALLAS[i] : '') + '</span>' +
+            '</button>';
+    });
+    porId('listaNiveles').innerHTML = html;
+}
+
+// cuenta las partidas (se guarda en el navegador)
+function partidas(sumar) {
+    try {
+        let n = Number(localStorage.getItem('maquireto_jug')) || 0;
+        if (sumar) {
+            n++;
+            localStorage.setItem('maquireto_jug', n);
+        }
+        return n;
+    } catch (e) {
+        return 0;
+    }
+}
+
+// escribe los datos en la ficha del inicio
+function llenarFicha() {
+    function poner(id, valor) {
+        porId(id).textContent = valor;
+    }
+    let totalPreg = 0;
+    NIVELES.forEach(function (n) { totalPreg += n.lista.length; });
+
+    poner('fTitulo', DATOS.titulo);
+    poner('fTipo', DATOS.tipo);
+    poner('fDesc', DATOS.descripcion);
+    poner('fArea', DATOS.area);
+    poner('fAutor', DATOS.autor);
+    poner('fNivel', DATOS.nivel);
+    poner('fIdioma', DATOS.idioma);
+    poner('fFecha', DATOS.fecha);
+    poner('fNiv', NIVELES.length);
+    poner('fPreg', totalPreg);
+    poner('fTiempo', DATOS.tiempo + ' segundos');
+    poner('fJug', partidas(false));
+    poner('reglaNivel', DATOS.bloquearNiveles
+        ? 'Elige un nivel. Los niveles se desbloquean en orden.'
+        : 'Elige el nivel que quieras, en el orden que prefieras.');
+
+    porId('fObj').innerHTML = DATOS.objetivos.map(function (o) {
+        return '<li>' + o + '</li>';
+    }).join('');
+    porId('fLink').textContent = (location.href.split('#')[0] || 'archivo.html') + '#jugar';
+    document.title = DATOS.titulo;
+}
+
+function empezar(i) {
+    partidas(true);
+    porId('fJug').textContent = partidas(false);
+    niv = i;
+    preg = 0;
+    aciertos = 0;
+    puntos = 0;
+    ir('preguntas');
+    cargar();
+}
+
+// intenta mostrar la foto (enlace o archivo); si no carga, pone la ilustracion
+function ponerImagen(p) {
+    const caja = porId('pImagen');
+    let ruta = p.foto;
+    // si es solo un nombre (sin punto ni barra), se busca en la carpeta de fotos
+    if (ruta.indexOf('.') === -1 && ruta.indexOf('/') === -1) {
+        ruta = DATOS.carpetaFotos + '/' + ruta + '.' + DATOS.formatoFotos;
+    }
+    caja.innerHTML = '<img src="' + ruta + '" alt="Imagen de la pregunta">';
+    caja.firstChild.onerror = function () {
+        caja.innerHTML = DIB[p.dib];
+    };
+}
+
+// prepara la pregunta que toca
+function cargar() {
+    listo = false;
+    const p = NIVELES[niv].lista[preg];
+
+    porId('pNivel').textContent = (niv === 3) ? 'Nivel final' : 'Nivel ' + (niv + 1);
+    porId('pNum').textContent = 'Pregunta ' + (preg + 1) + '/' + NIVELES[niv].lista.length;
+    porId('pPuntos').textContent = puntos + ' pts';
+    porId('pTexto').textContent = p.texto;
+    porId('pAviso').innerHTML = '';
+    porId('pSig').style.display = 'none';
+    ponerImagen(p);
+
+    // las opciones salen en orden al azar
+    const orden = p.ops.map(function (o, k) { return k; });
+    orden.sort(function () { return Math.random() - 0.5; });
+    let html = '';
+    orden.forEach(function (k) {
+        html += '<button class="opcion" data-k="' + k + '" onclick="responder(' + k + ')">' + p.ops[k] + '</button>';
+    });
+    porId('pOpciones').innerHTML = html;
+
+    // arranca el reloj
+    seg = DATOS.tiempo;
+    mostrarTiempo(true);
+    clearInterval(reloj);
+    reloj = setInterval(function () {
+        seg--;
+        mostrarTiempo(false);
+        if (seg <= 0) responder(-1);
+    }, 1000);
+}
+
+function mostrarTiempo(reiniciar) {
+    const relleno = porId('barraDentro');
+    porId('tiempo').textContent = '⏱ ' + seg + ' s';
+    porId('barra').classList.toggle('poco', seg <= 10);
+
+    if (reiniciar) {
+        // sin animacion, para que la barra se llene de golpe
+        relleno.style.transition = 'none';
+        relleno.style.width = '100%';
+        relleno.offsetWidth;
+        relleno.style.transition = '';
+    }
+    relleno.style.width = (seg / DATOS.tiempo * 100) + '%';
+}
+
+// k = opcion elegida (-1 si se acabo el tiempo)
+function responder(k) {
+    if (listo) return;
+    listo = true;
+    clearInterval(reloj);
+
+    const p = NIVELES[niv].lista[preg];
+    const acerto = (k === p.bien);
+
+    // pinta la correcta de verde y la elegida (si fallo) de rojo
+    document.querySelectorAll('.opcion').forEach(function (b) {
+        b.disabled = true;
+        const v = Number(b.dataset.k);
+        if (v === p.bien) b.classList.add('bien');
+        else if (v === k) b.classList.add('mal');
+    });
+
+    let msg;
+    if (acerto) {
+        const ganados = DATOS.puntosAcierto + seg * 2;   // bono por rapidez
+        puntos += ganados;
+        aciertos++;
+        msg = '<b>✅ ¡Correcto!</b> +' + ganados + ' puntos. ' + p.porque;
+    } else if (k === -1) {
+        msg = '<b>⌛ Se acabó el tiempo.</b> No sumas puntos. La respuesta era «' + p.ops[p.bien] + '». ' + p.porque;
+    } else {
+        msg = '<b>❌ Incorrecto.</b> No sumas puntos. La respuesta correcta era «' + p.ops[p.bien] + '». ' + p.porque;
+    }
+
+    porId('pAviso').innerHTML = '<div class="aviso ' + (acerto ? '' : 'mal') + '">' + msg + '</div>';
+    porId('pPuntos').textContent = puntos + ' pts';
+
+    const sig = porId('pSig');
+    sig.style.display = 'inline-block';
+    sig.textContent = (preg === NIVELES[niv].lista.length - 1) ? 'Ver resultados ➜' : 'Siguiente ➜';
+}
+
+function siguiente() {
+    preg++;
+    if (preg < NIVELES[niv].lista.length) cargar();
+    else terminar();
+}
+
+function terminar() {
+    const total = NIVELES[niv].lista.length;
+    const porc = Math.round(aciertos / total * 100);
+    if (puntos > mejor[niv]) mejor[niv] = puntos;
+
+    const paso = porc >= DATOS.aprobar;
+    if (paso) superado[niv] = true;
+
+    porId('rTitulo').textContent = paso ? '¡Nivel superado! 🎉' : '¡Casi! Inténtalo otra vez';
+    porId('rPuntos').textContent = puntos;
+    porId('rPorc').textContent = porc + '%';
+
+    let html = '';
+    NIVELES.forEach(function (n, i) {
+        html += '<div class="insignia ' + (superado[i] ? '' : 'apagada') + '">' +
+            '<div class="circulo">' + MEDALLAS[i] + '</div>' + TITULOS[i] + '</div>';
+    });
+    porId('rInsignias').innerHTML = html;
+    clearInterval(reloj);
+    mostrar('resultados');
+}
+
+// al abrir el archivo
+llenarFicha();
+if (location.hash === '#jugar') ir('niveles');
+</script>
+</body>
+</html>
